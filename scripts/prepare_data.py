@@ -40,7 +40,7 @@ def main():
         band_pass_filtering=True, global_signal_regression=False,
         derivatives=["rois_aal"], quality_checked=True,
     )
-    phen = pd.DataFrame.from_records(dataset.phenotypic)
+    phen = pd.DataFrame(dataset.phenotypic)
     records, matrices = [], []
     for idx, path in enumerate(dataset.rois_aal):
         if isinstance(path, (str, Path)):
@@ -61,9 +61,9 @@ def main():
                 f"indices = {constant_rois.tolist()}"
             )
         try:
-            corr = correlation_matrix(ts)
+            corr = correlation_matrix(ts)  
         except ValueError as exc:
-            print(f"Skipping {path}: {exc}")
+            print(f"Skipping subject {idx}: {exc}")
             continue
         edge_index, weights, signed = sparse_graph_from_corr(corr, density=0.10)
         row = phen.iloc[idx]
