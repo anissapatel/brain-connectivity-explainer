@@ -9,3 +9,6 @@ data/processed/
 *.pth
 .DS_Store
 
+
+# per-run model outputs (large .npz); summaries live in results/<run>/final_v3*
+results/*/holdout_*/

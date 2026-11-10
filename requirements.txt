@@ -6,3 +6,5 @@ nilearn
 torch
 torch-geometric
 networkx
+scipy
+statsmodels
