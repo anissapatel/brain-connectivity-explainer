@@ -18,10 +18,20 @@ from src.graphs import correlation_matrix, sparse_graph_from_corr
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--n-subjects", type=int, default=20)
+    parser.add_argument(
+        "--run-name",
+        type=str,
+        default=None,
+        help="Name for this processing run"
+    )
     args = parser.parse_args()
+
+    run_name = args.run_name or f"pilot_{args.n_subjects}"
+
     raw = ROOT / "data" / "raw"
-    out = ROOT / "data" / "processed"
-    results = ROOT / "results"
+    out = ROOT / "data" / "processed" / run_name
+    results = ROOT / "results" / run_name
+
     for folder in (raw, out, results):
         folder.mkdir(parents=True, exist_ok=True)
 
@@ -33,10 +43,23 @@ def main():
     phen = pd.DataFrame.from_records(dataset.phenotypic)
     records, matrices = [], []
     for idx, path in enumerate(dataset.rois_aal):
-        ts = np.loadtxt(path)
+        if isinstance(path, (str, Path)):
+            ts = np.loadtxt(path)
+        else:
+            ts = np.asarray(path, dtype=float)
         if ts.ndim != 2:
             print(f"Skipping {path}: non-2D time series")
             continue
+        
+        roi_std = np.std(ts, axis=0)
+        constant_rois = np.where(roi_std < 1e-12)[0]
+
+        if len(constant_rois) > 0:
+            print(
+                f"Subject {idx}: "
+                f"{len(constant_rois)} constant ROI(s), "
+                f"indices = {constant_rois.tolist()}"
+            )
         try:
             corr = correlation_matrix(ts)
         except ValueError as exc:
