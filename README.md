@@ -13,6 +13,8 @@ python scripts/prepare_data.py --n-subjects 20
 python scripts/baseline.py
 ```
 
+If Python and pandas issues persist, install Python 3.14.10 and pandas 2.3.3
+
 The first script downloads regional time series, builds Pearson correlation matrices,
 creates sparse graphs, writes a class/site summary, and saves a sample connectivity
 heatmap. The baseline trains/evaluates a logistic-regression classifier on a
