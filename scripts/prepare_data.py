@@ -42,6 +42,7 @@ def main():
     )
     phen = pd.DataFrame(dataset.phenotypic)
     records, matrices = [], []
+    excluded = []
     for idx, path in enumerate(dataset.rois_aal):
         if isinstance(path, (str, Path)):
             ts = np.loadtxt(path)
@@ -55,15 +56,33 @@ def main():
         constant_rois = np.where(roi_std < 1e-12)[0]
 
         if len(constant_rois) > 0:
+            subject_id = str(phen.iloc[idx]["FILE_ID"])
+
+            excluded.append({
+                "file_id": subject_id,
+                "reason": "constant_roi",
+                "roi_indices": ",".join(map(str, constant_rois))
+            })
+
             print(
-                f"Subject {idx}: "
+                f"Skipping {subject_id}: "
                 f"{len(constant_rois)} constant ROI(s), "
-                f"indices = {constant_rois.tolist()}"
+                f"indices={constant_rois.tolist()}"
             )
+            continue
+
         try:
             corr = correlation_matrix(ts)  
         except ValueError as exc:
-            print(f"Skipping subject {idx}: {exc}")
+            subject_id = str(phen.iloc[idx]["FILE_ID"])
+
+            excluded.append({
+                "file_id": subject_id,
+                "reason": str(exc),
+                "roi_indices": ""
+            })
+
+            print(f"Skipping {subject_id}: {exc}")
             continue
         edge_index, weights, signed = sparse_graph_from_corr(corr, density=0.10)
         row = phen.iloc[idx]
@@ -82,6 +101,12 @@ def main():
                         "site": str(row["SITE_ID"]), "n_rois": corr.shape[0],
                         "n_timepoints": ts.shape[0],
                         "n_undirected_edges": len(weights) // 2})
+    
+    pd.DataFrame(
+        excluded,
+        columns=["file_id", "reason", "roi_indices"]
+    ).to_csv(out / "qc_exclusions.csv", index=False)
+
     if not records:
         raise RuntimeError("No subjects processed: inspect input data and metadata")
     summary = pd.DataFrame(records)
